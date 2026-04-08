@@ -102,7 +102,6 @@ jobs:
           tar -xzf releases/release.tar.gz -C current
           cd current
 
-          fi
 
           npm ci --omit=dev
           npx prisma generate
