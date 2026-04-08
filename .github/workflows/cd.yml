@@ -77,17 +77,25 @@ jobs:
           if [ -n "${{ secrets.SSH_KNOWN_HOSTS }}" ]; then
             echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
           else
-            ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+            ssh-keyscan -p "${DEPLOY_PORT:-22}" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           fi
+
+      - name: Validate deploy vars
+        run: |
+          test -n "$DEPLOY_HOST" || (echo "Missing DEPLOY_HOST" && exit 1)
+          test -n "$DEPLOY_USER" || (echo "Missing DEPLOY_USER" && exit 1)
+          test -n "$DEPLOY_PATH" || (echo "Missing DEPLOY_PATH" && exit 1)
+          echo "Deploy target: $DEPLOY_USER@$DEPLOY_HOST:${DEPLOY_PORT:-22}"
+          echo "Deploy path: $DEPLOY_PATH"
 
       - name: Upload package to server
         run: |
-          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_PATH/releases' '$DEPLOY_PATH/current'"
-          scp -P "$DEPLOY_PORT" release.tar.gz "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/releases/release.tar.gz"
+          ssh -p "${DEPLOY_PORT:-22}" "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_PATH/releases' '$DEPLOY_PATH/current'"
+          scp -P "${DEPLOY_PORT:-22}" release.tar.gz "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/releases/release.tar.gz"
 
       - name: Deploy on server
         run: |
-          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+          ssh -p "${DEPLOY_PORT:-22}" "$DEPLOY_USER@$DEPLOY_HOST" \
             "DEPLOY_PATH='$DEPLOY_PATH' APP_NAME='$APP_NAME' RUN_MIGRATE_DEPLOY='$RUN_MIGRATE_DEPLOY' bash -s" <<'EOF'
           set -e
           cd "$DEPLOY_PATH"
