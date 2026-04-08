@@ -30,6 +30,9 @@ npx prisma migrate dev --name init
 
 # Seed database (optional)
 npx prisma db seed
+
+# After pulling latest compliance schema updates
+npx prisma migrate dev --name mvp_compliance
 ```
 
 ## Running the Application
@@ -42,6 +45,32 @@ npm run start:dev
 npm run build
 npm run start:prod
 ```
+
+## CI/CD (GitHub Actions)
+
+- `CI` workflow: `.github/workflows/ci.yml`
+  - Trigger: push/pull request on `main`, `develop`
+  - Runs: `npm ci` -> `prisma generate` -> `format:check` -> `lint:check` -> `build` -> `test`
+- `CD` workflow: `.github/workflows/cd.yml`
+  - Trigger: push on `main` or manual `workflow_dispatch`
+  - Runs: `npm ci` -> `prisma generate` -> `build` -> package `dist` artifact -> SSH deploy (PM2)
+
+### Deploy Configuration (set in GitHub before running CD)
+
+Repository Variables (`Settings -> Secrets and variables -> Actions -> Variables`):
+
+- `DEPLOY_HOST`: Server IP/domain
+- `DEPLOY_PORT`: SSH port (default `22`)
+- `DEPLOY_USER`: SSH user on server
+- `DEPLOY_PATH`: App folder on server (example: `/var/www/nant-be`)
+- `APP_NAME`: PM2 process name (example: `nant-be`)
+- `RUN_MIGRATE_DEPLOY`: `true` or `false` (run `prisma migrate deploy` during deploy)
+
+Repository Secrets (`Settings -> Secrets and variables -> Actions -> Secrets`):
+
+- `SSH_PRIVATE_KEY`: private key used by GitHub Actions to SSH to server
+- `SSH_KNOWN_HOSTS`: optional pinned host key (recommended)
+- `APP_ENV_FILE`: optional multiline `.env` content to write on server at deploy time
 
 ## Project Structure
 
@@ -66,17 +95,20 @@ prisma/
 ## API Endpoints (To Be Implemented)
 
 ### Auth
+
 - POST /auth/register
 - POST /auth/login
 - POST /auth/refresh
 - GET /auth/me
 
 ### Users
+
 - GET /users/:id
 - PATCH /users/:id
 - DELETE /users/:id
 
 ### Workers
+
 - GET /workers
 - GET /workers/:id
 - POST /workers
@@ -85,11 +117,13 @@ prisma/
 - GET /workers/:id/reviews
 
 ### Families
+
 - GET /families/:id
 - POST /families
 - PATCH /families/:id
 
 ### Bookings
+
 - GET /bookings
 - POST /bookings
 - GET /bookings/:id
@@ -97,17 +131,20 @@ prisma/
 - DELETE /bookings/:id
 
 ### Payments
+
 - POST /payments/initiate
 - POST /payments/confirm
 - GET /payments/:id/status
 
 ### Reviews
+
 - GET /reviews/:workerId
 - POST /reviews
 - PATCH /reviews/:id
 - DELETE /reviews/:id
 
 ### Messages
+
 - GET /messages
 - POST /messages
 - GET /messages/:conversationId
@@ -115,6 +152,7 @@ prisma/
 ## Database Schema
 
 ### Key Models
+
 - **User**: Base user entity (email, name, phone, role)
 - **Worker**: Nanny/helper profile (languages, services, rates, availability)
 - **Family**: Family profile (children info, preferences)
@@ -141,3 +179,11 @@ prisma/
 6. Add payment integration
 7. Add WebSocket for messaging
 8. Add unit tests
+
+## Default Admin
+
+- System auto-creates an admin account on app startup if it does not exist.
+- Email: `admin@gmail.com`
+- Password: `Admin@123`
+
+See `MVP_MAPPING.md` for requirement-to-feature mapping added in this round.

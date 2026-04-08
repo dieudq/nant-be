@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateWorkerDocumentDto } from './dto/create-worker-document.dto';
+import { CreateTrainingAttemptDto } from './dto/create-training-attempt.dto';
+import { ScheduleInterviewDto } from './dto/schedule-interview.dto';
 
 @Injectable()
 export class WorkersService {
@@ -35,6 +38,11 @@ export class WorkersService {
             email: true,
             phone: true,
           },
+        },
+        documents: true,
+        references: true,
+        trainingAttempts: {
+          orderBy: { takenAt: 'desc' },
         },
       },
     });
@@ -76,6 +84,62 @@ export class WorkersService {
   async reject(id: number) {
     return this.prisma.worker.delete({
       where: { id },
+    });
+  }
+
+  async createDocument(workerId: number, dto: CreateWorkerDocumentDto) {
+    return this.prisma.workerDocument.create({
+      data: {
+        workerId,
+        type: dto.type,
+        title: dto.title,
+        fileUrl: dto.fileUrl,
+        issuedAt: dto.issuedAt ? new Date(dto.issuedAt) : undefined,
+        expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
+        notes: dto.notes,
+      },
+    });
+  }
+
+  async getDocuments(workerId: number) {
+    return this.prisma.workerDocument.findMany({
+      where: { workerId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createTrainingAttempt(workerId: number, dto: CreateTrainingAttemptDto) {
+    const passed = dto.score >= 80;
+
+    return this.prisma.$transaction(async (tx) => {
+      const attempt = await tx.trainingAttempt.create({
+        data: {
+          workerId,
+          courseName: dto.courseName,
+          score: dto.score,
+          passed,
+        },
+      });
+
+      if (passed) {
+        await tx.worker.update({
+          where: { id: workerId },
+          data: { trainingPassed: true },
+        });
+      }
+
+      return attempt;
+    });
+  }
+
+  async scheduleInterview(workerId: number, dto: ScheduleInterviewDto) {
+    return this.prisma.interviewSession.create({
+      data: {
+        workerId,
+        familyId: dto.familyId,
+        scheduledAt: new Date(dto.scheduledAt),
+        notes: dto.notes,
+      },
     });
   }
 }

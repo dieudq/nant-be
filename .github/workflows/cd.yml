@@ -1,0 +1,117 @@
+name: CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: cd-main
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  release-artifact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Build
+        run: npm run build
+
+      - name: Package build output
+        run: |
+          tar -czf release.tar.gz dist package.json package-lock.json prisma
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nest-release
+          path: release.tar.gz
+          retention-days: 7
+
+  deploy:
+    needs: release-artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      APP_NAME: ${{ vars.APP_NAME || 'nant-be' }}
+      RUN_MIGRATE_DEPLOY: ${{ vars.RUN_MIGRATE_DEPLOY || 'true' }}
+
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nest-release
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          if [ -n "${{ secrets.SSH_KNOWN_HOSTS }}" ]; then
+            echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          fi
+
+      - name: Upload package to server
+        run: |
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_PATH/releases' '$DEPLOY_PATH/current'"
+          scp -P "$DEPLOY_PORT" release.tar.gz "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/releases/release.tar.gz"
+
+      - name: Deploy on server
+        run: |
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' APP_NAME='$APP_NAME' RUN_MIGRATE_DEPLOY='$RUN_MIGRATE_DEPLOY' bash -s" <<'EOF'
+          set -e
+          cd "$DEPLOY_PATH"
+          tar -xzf releases/release.tar.gz -C current
+          cd current
+
+          if [ -n "${{ secrets.APP_ENV_FILE }}" ]; then
+            cat > .env <<"ENVEOF"
+${{ secrets.APP_ENV_FILE }}
+ENVEOF
+          fi
+
+          npm ci --omit=dev
+          npx prisma generate
+
+          if [ "$RUN_MIGRATE_DEPLOY" = "true" ]; then
+            npx prisma migrate deploy
+          fi
+
+          if command -v pm2 >/dev/null 2>&1; then
+            pm2 restart "$APP_NAME" || pm2 start dist/main.js --name "$APP_NAME"
+          else
+            echo "pm2 not found on server. Please install pm2 or adjust deploy command."
+            exit 1
+          fi
+          EOF
+

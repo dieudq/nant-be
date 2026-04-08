@@ -1,7 +1,13 @@
 import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
 import { JwtAuthGuard } from '../auth/jwt.guard';
+import { CreateShiftReportDto } from './dto/create-shift-report.dto';
 
 @ApiTags('Bookings')
 @Controller('bookings')
@@ -20,7 +26,7 @@ export class BookingsController {
   @ApiResponse({ status: 200, description: 'Booking found' })
   @ApiResponse({ status: 404, description: 'Booking not found' })
   async findById(@Param('id') id: string) {
-    return this.bookingsService.findById(parseInt(id));
+    return this.bookingsService.findById(parseInt(id, 10));
   }
 
   @Post()
@@ -38,7 +44,7 @@ export class BookingsController {
   @ApiOperation({ summary: 'Confirm booking' })
   @ApiResponse({ status: 200, description: 'Booking confirmed' })
   async confirm(@Param('id') id: string) {
-    return this.bookingsService.updateStatus(parseInt(id), 'CONFIRMED');
+    return this.bookingsService.updateStatus(parseInt(id, 10), 'CONFIRMED');
   }
 
   @Post(':id/cancel')
@@ -47,6 +53,18 @@ export class BookingsController {
   @ApiOperation({ summary: 'Cancel booking' })
   @ApiResponse({ status: 200, description: 'Booking cancelled' })
   async cancel(@Param('id') id: string) {
-    return this.bookingsService.cancel(parseInt(id));
+    return this.bookingsService.cancel(parseInt(id, 10));
+  }
+
+  @Post(':id/shift-report')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Create or update post-shift report' })
+  @ApiResponse({ status: 201, description: 'Shift report saved' })
+  async createShiftReport(
+    @Param('id') id: string,
+    @Body() dto: CreateShiftReportDto,
+  ) {
+    return this.bookingsService.createShiftReport(parseInt(id, 10), dto);
   }
 }

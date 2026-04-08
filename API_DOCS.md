@@ -3,7 +3,9 @@
 ## Authentication Endpoints
 
 ### POST /auth/register
+
 Register new user
+
 ```bash
 curl -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
@@ -17,7 +19,9 @@ curl -X POST http://localhost:3000/auth/register \
 ```
 
 ### POST /auth/login
+
 Login user
+
 ```bash
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
@@ -28,7 +32,9 @@ curl -X POST http://localhost:3000/auth/login \
 ```
 
 ### GET /auth/me
+
 Get current user (requires JWT)
+
 ```bash
 curl -X GET http://localhost:3000/auth/me \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
@@ -39,19 +45,25 @@ curl -X GET http://localhost:3000/auth/me \
 ## Workers Endpoints
 
 ### GET /workers
+
 Get all approved workers
+
 ```bash
 curl http://localhost:3000/workers
 ```
 
 ### GET /workers/:id
+
 Get worker by ID
+
 ```bash
 curl http://localhost:3000/workers/1
 ```
 
 ### POST /workers
+
 Create worker profile (requires JWT)
+
 ```bash
 curl -X POST http://localhost:3000/workers \
   -H "Content-Type: application/json" \
@@ -67,24 +79,74 @@ curl -X POST http://localhost:3000/workers \
 ```
 
 ### GET /workers/pending
+
 Get pending worker approvals (requires JWT)
+
 ```bash
 curl -X GET http://localhost:3000/workers/pending \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### POST /workers/:id/approve
+
 Approve worker (requires JWT)
+
 ```bash
 curl -X POST http://localhost:3000/workers/1/approve \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### POST /workers/:id/reject
+
 Reject worker (requires JWT)
+
 ```bash
 curl -X POST http://localhost:3000/workers/1/reject \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### POST /workers/:id/documents
+
+Attach compliance document to worker profile (requires JWT)
+
+```bash
+curl -X POST http://localhost:3000/workers/1/documents \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "type": "ID_CARD_LEVEL_2",
+    "title": "CCCD level 2",
+    "fileUrl": "https://cdn.example.com/docs/worker-1-cccd-front.jpg"
+  }'
+```
+
+### POST /workers/:id/training-attempts
+
+Submit training score (requires JWT)
+
+```bash
+curl -X POST http://localhost:3000/workers/1/training-attempts \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "courseName": "Basic Infant Care 101",
+    "score": 85
+  }'
+```
+
+### POST /workers/:id/interviews
+
+Schedule 2:1 interview (requires JWT)
+
+```bash
+curl -X POST http://localhost:3000/workers/1/interviews \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "familyId": 2,
+    "scheduledAt": "2026-04-20T09:00:00.000Z",
+    "notes": "Discuss allergy handling and routine"
+  }'
 ```
 
 ---
@@ -92,19 +154,25 @@ curl -X POST http://localhost:3000/workers/1/reject \
 ## Families Endpoints
 
 ### GET /families
+
 Get all families
+
 ```bash
 curl http://localhost:3000/families
 ```
 
 ### GET /families/:id
+
 Get family by ID
+
 ```bash
 curl http://localhost:3000/families/1
 ```
 
 ### POST /families
+
 Create family profile (requires JWT)
+
 ```bash
 curl -X POST http://localhost:3000/families \
   -H "Content-Type: application/json" \
@@ -122,19 +190,25 @@ curl -X POST http://localhost:3000/families \
 ## Bookings Endpoints
 
 ### GET /bookings
+
 Get all bookings
+
 ```bash
 curl http://localhost:3000/bookings
 ```
 
 ### GET /bookings/:id
+
 Get booking by ID
+
 ```bash
 curl http://localhost:3000/bookings/1
 ```
 
 ### POST /bookings
+
 Create booking (requires JWT)
+
 ```bash
 curl -X POST http://localhost:3000/bookings \
   -H "Content-Type: application/json" \
@@ -152,17 +226,36 @@ curl -X POST http://localhost:3000/bookings \
 ```
 
 ### POST /bookings/:id/confirm
+
 Confirm booking (requires JWT)
+
 ```bash
 curl -X POST http://localhost:3000/bookings/1/confirm \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### POST /bookings/:id/cancel
+
 Cancel booking (requires JWT)
+
 ```bash
 curl -X POST http://localhost:3000/bookings/1/cancel \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### POST /bookings/:id/shift-report
+
+Create/update post-shift report (requires JWT)
+
+```bash
+curl -X POST http://localhost:3000/bookings/1/shift-report \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "activities": "Fed baby, nap routine, story time",
+    "incidents": "No major incidents",
+    "handoverNotes": "Please monitor hydration tonight"
+  }'
 ```
 
 ---
@@ -170,14 +263,18 @@ curl -X POST http://localhost:3000/bookings/1/cancel \
 ## Users Endpoints
 
 ### GET /users
+
 Get all users (requires JWT)
+
 ```bash
 curl -X GET http://localhost:3000/users \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### GET /users/:id
+
 Get user by ID (requires JWT)
+
 ```bash
 curl -X GET http://localhost:3000/users/1 \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
@@ -188,6 +285,7 @@ curl -X GET http://localhost:3000/users/1 \
 ## Test Flow
 
 1. **Register Worker**
+
 ```bash
 curl -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
@@ -200,6 +298,7 @@ curl -X POST http://localhost:3000/auth/register \
 ```
 
 2. **Register Family**
+
 ```bash
 curl -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
@@ -212,6 +311,7 @@ curl -X POST http://localhost:3000/auth/register \
 ```
 
 3. **Login & Get Token**
+
 ```bash
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
@@ -220,9 +320,11 @@ curl -X POST http://localhost:3000/auth/login \
     "password": "password123"
   }'
 ```
+
 Copy the `access_token` from response
 
 4. **Create Worker Profile**
+
 ```bash
 curl -X POST http://localhost:3000/workers \
   -H "Content-Type: application/json" \
@@ -241,6 +343,7 @@ curl -X POST http://localhost:3000/workers \
 ## Response Examples
 
 ### Success Response
+
 ```json
 {
   "id": 1,
@@ -252,6 +355,7 @@ curl -X POST http://localhost:3000/workers \
 ```
 
 ### Error Response
+
 ```json
 {
   "statusCode": 400,
@@ -299,3 +403,9 @@ JWT_SECRET="your-super-secret-key-change-in-production"
 NODE_ENV="development"
 PORT=3000
 ```
+
+## Default Admin Account
+
+- App bootstrap auto-creates admin account if missing.
+- Email: `admin@gmail.com`
+- Password: `Admin@123`

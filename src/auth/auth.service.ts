@@ -1,11 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
+import { Role, User } from '@prisma/client';
+import { compare, hash } from 'bcrypt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -20,11 +28,12 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new Error('User already exists');
+      this.logger.warn(`Register failed: existing email ${email}`);
+      throw new ConflictException('User already exists');
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await hash(password, 10);
 
     // Create user
     const user = await this.prisma.user.create({
@@ -32,7 +41,7 @@ export class AuthService {
         email,
         name,
         phone,
-        role: role || 'USER',
+        role: role || Role.WORKER,
         password: hashedPassword,
       },
     });
@@ -55,6 +64,30 @@ export class AuthService {
     };
   }
 
+  async createDefaultAdmin(): Promise<User> {
+    const defaultAdminEmail = 'admin@gmail.com';
+    const defaultAdminPassword = 'Admin@123';
+
+    const existingAdmin = await this.prisma.user.findUnique({
+      where: { email: defaultAdminEmail },
+    });
+
+    if (existingAdmin) {
+      return existingAdmin;
+    }
+
+    const hashedPassword = await hash(defaultAdminPassword, 10);
+
+    return this.prisma.user.create({
+      data: {
+        email: defaultAdminEmail,
+        password: hashedPassword,
+        name: 'System Admin',
+        role: Role.ADMIN,
+      },
+    });
+  }
+
   async login(email: string, password: string) {
     // Find user by email
     const user = await this.prisma.user.findUnique({
@@ -62,14 +95,16 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      this.logger.warn(`Login failed: user not found for email ${email}`);
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     // Check password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new Error('Invalid password');
+      this.logger.warn(`Login failed: invalid password for email ${email}`);
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     // Generate JWT token
@@ -90,13 +125,17 @@ export class AuthService {
     };
   }
 
-  async validateUser(id: number) {
+  async validateUser(id: number | undefined) {
+    if (!id || !Number.isInteger(id)) {
+      throw new UnauthorizedException('Invalid token payload');
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new UnauthorizedException('User not found');
     }
 
     return user;

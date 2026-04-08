@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateShiftReportDto } from './dto/create-shift-report.dto';
 
 @Injectable()
 export class BookingsService {
@@ -49,6 +50,12 @@ export class BookingsService {
         },
         payment: true,
         review: true,
+        contract: {
+          include: {
+            acceptances: true,
+          },
+        },
+        shiftReport: true,
       },
     });
   }
@@ -69,7 +76,10 @@ export class BookingsService {
     });
   }
 
-  async updateStatus(id: number, status: 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' | 'PENDING') {
+  async updateStatus(
+    id: number,
+    status: 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' | 'PENDING',
+  ) {
     return this.prisma.booking.update({
       where: { id },
       data: { status: status as any },
@@ -80,6 +90,23 @@ export class BookingsService {
     return this.prisma.booking.update({
       where: { id },
       data: { status: 'CANCELLED' },
+    });
+  }
+
+  async createShiftReport(bookingId: number, dto: CreateShiftReportDto) {
+    return this.prisma.shiftReport.upsert({
+      where: { bookingId },
+      update: {
+        activities: dto.activities,
+        incidents: dto.incidents,
+        handoverNotes: dto.handoverNotes,
+      },
+      create: {
+        bookingId,
+        activities: dto.activities,
+        incidents: dto.incidents,
+        handoverNotes: dto.handoverNotes,
+      },
     });
   }
 }

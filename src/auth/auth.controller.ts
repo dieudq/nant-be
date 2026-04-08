@@ -1,9 +1,21 @@
 import { Controller, Post, Body, UseGuards, Get, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { JwtAuthGuard } from './jwt.guard';
 import { LoginDto } from './dto/login.dto';
+
+type AuthenticatedRequest = {
+  user?: {
+    userId?: number;
+    sub?: number;
+  };
+};
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -32,7 +44,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'User profile' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getProfile(@Req() req: any) {
-    return this.authService.validateUser(req.user.sub);
+  async getProfile(@Req() req: AuthenticatedRequest) {
+    const userId = req.user?.userId ?? req.user?.sub;
+    return this.authService.validateUser(userId);
   }
 }

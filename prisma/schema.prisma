@@ -11,83 +11,145 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
   password  String
   name      String
   phone     String?
-  role      Role      @default(USER)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  role      Role     @default(WORKER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  worker    Worker?
-  family    Family?
+  worker Worker?
+  family Family?
 }
 
 enum Role {
   ADMIN
   WORKER
   FAMILY
-  USER
+}
+
+enum JobType {
+  BABYSITTING
+  NANNY
+  MAID
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum WorkerDocumentType {
+  ID_CARD_LEVEL_2
+  HEALTH_CERT
+  ENGLISH_CERT
+  CPR_CERT
+  REFERENCE_LETTER
+  INTRO_VIDEO
+  PROFILE_PHOTO
+  OTHER
 }
 
 model Worker {
-  id             Int       @id @default(autoincrement())
-  userId         Int       @unique
+  id             Int      @id @default(autoincrement())
+  userId         Int      @unique
+  employeeCode   String?  @unique
   bio            String?
-  languages      String[]  // JSON array of language skills
-  services       String[]  // JSON array of services offered
-  hourlyRate     Int       // in VND
-  dailyRate      Int       // in VND
-  travelRate     Int?      // in VND
-  rating         Float     @default(0)
-  reviewCount    Int       @default(0)
-  isApproved     Boolean   @default(false)
-  availability   String[]  // Days of week
-  certifications String[]  // JSON array
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  user      User       @relation(fields: [userId], references: [id])
-  bookings  Booking[]
-  reviews   Review[]
-}
-
-model Family {
-  id              Int       @id @default(autoincrement())
-  userId          Int       @unique
-  numChildren     Int?
-  childrenAges    String?   // e.g., "3 years, 6 years"
-  specialRequirements String?
-  preferences     String?   // JSON string of preferences
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  jobTypes       JobType[]
+  languages      String[] // JSON array of language skills
+  services       String[] // JSON array of services offered
+  hourlyRate     Int // in VND
+  dailyRate      Int // in VND
+  travelRate     Int? // in VND
+  rating         Float    @default(0)
+  reviewCount    Int      @default(0)
+  isApproved     Boolean  @default(false)
+  verificationStatus VerificationStatus @default(PENDING)
+  nonSmoker      Boolean  @default(true)
+  hasReliableTransportation Boolean @default(false)
+  backgroundCheckStatus VerificationStatus @default(PENDING)
+  drugScreenStatus VerificationStatus @default(PENDING)
+  trainingPassed Boolean  @default(false)
+  introVideoViUrl String?
+  introVideoEnUrl String?
+  profilePhotoUrl String?
+  availability   String[] // Days of week
+  certifications String[] // JSON array
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   user     User      @relation(fields: [userId], references: [id])
   bookings Booking[]
   reviews  Review[]
+  documents WorkerDocument[]
+  references WorkerReference[]
+  trainingAttempts TrainingAttempt[]
+  interviews InterviewSession[]
+  contracts Contract[]
+}
+
+model Family {
+  id                  Int      @id @default(autoincrement())
+  userId              Int      @unique
+  passportNumber      String?
+  currentAddress      String?
+  numChildren         Int?
+  childrenAges        String? // e.g., "3 years, 6 years"
+  childrenDetails     String?
+  allergies           String?
+  personalityNotes    String?
+  specialInstructions String?
+  specialRequirements String?
+  preferences         String? // JSON string of preferences
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  bookings Booking[]
+  reviews  Review[]
+  interviews InterviewSession[]
+  contracts Contract[]
 }
 
 model Booking {
-  id          Int       @id @default(autoincrement())
-  familyId    Int
-  workerId    Int
-  date        DateTime
-  startTime   String    // HH:mm format
-  endTime     String    // HH:mm format
-  duration    Int       // in hours
-  service     String    // babysitting, house help, tutoring, travel, etc
-  rate        Int       // in VND
-  totalCost   Int       // in VND
-  status      BookingStatus @default(PENDING)
-  notes       String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        Int           @id @default(autoincrement())
+  familyId  Int
+  workerId  Int
+  date      DateTime
+  startTime String // HH:mm format
+  endTime   String // HH:mm format
+  duration  Int // in hours
+  service   String // babysitting, house help, tutoring, travel, etc
+  rate      Int // in VND
+  totalCost Int // in VND
+  status    BookingStatus @default(PENDING)
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
-  family   Family    @relation(fields: [familyId], references: [id])
-  worker   Worker    @relation(fields: [workerId], references: [id])
-  payment  Payment?
-  review   Review?
+  family  Family   @relation(fields: [familyId], references: [id])
+  worker  Worker   @relation(fields: [workerId], references: [id])
+  payment Payment?
+  review  Review?
+  contract Contract?
+  shiftReport ShiftReport?
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  TERMINATED
+  EXPIRED
 }
 
 enum BookingStatus {
@@ -99,16 +161,17 @@ enum BookingStatus {
 }
 
 model Payment {
-  id          Int       @id @default(autoincrement())
-  bookingId   Int       @unique
-  amount      Int       // in VND
-  method      PaymentMethod
-  status      PaymentStatus @default(PENDING)
+  id            Int           @id @default(autoincrement())
+  bookingId     Int           @unique
+  amount        Int // in VND
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
   transactionId String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   booking Booking @relation(fields: [bookingId], references: [id])
+  breakdown PaymentBreakdown?
 }
 
 enum PaymentMethod {
@@ -126,13 +189,13 @@ enum PaymentStatus {
 }
 
 model Review {
-  id          Int       @id @default(autoincrement())
-  bookingId   Int       @unique
-  workerId    Int
-  familyId    Int
-  rating      Int       // 1-5
-  comment     String?
-  createdAt   DateTime  @default(now())
+  id        Int      @id @default(autoincrement())
+  bookingId Int      @unique
+  workerId  Int
+  familyId  Int
+  rating    Int // 1-5
+  comment   String?
+  createdAt DateTime @default(now())
 
   booking Booking @relation(fields: [bookingId], references: [id])
   worker  Worker  @relation(fields: [workerId], references: [id])
@@ -140,10 +203,120 @@ model Review {
 }
 
 model Message {
-  id        Int       @id @default(autoincrement())
-  senderId  Int
+  id         Int      @id @default(autoincrement())
+  senderId   Int
   receiverId Int
-  content   String
-  isRead    Boolean   @default(false)
-  createdAt DateTime  @default(now())
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
 }
+
+model WorkerDocument {
+  id                 Int                @id @default(autoincrement())
+  workerId           Int
+  type               WorkerDocumentType
+  title              String?
+  fileUrl            String
+  issuedAt           DateTime?
+  expiresAt          DateTime?
+  verificationStatus VerificationStatus @default(PENDING)
+  notes              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([workerId, type])
+}
+
+model WorkerReference {
+  id                 Int                @id @default(autoincrement())
+  workerId           Int
+  name               String
+  relation           String
+  phone              String?
+  notes              String?
+  verificationStatus VerificationStatus @default(PENDING)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+}
+
+model TrainingAttempt {
+  id         Int      @id @default(autoincrement())
+  workerId   Int
+  courseName String
+  score      Int
+  passed     Boolean
+  takenAt    DateTime @default(now())
+
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+}
+
+model InterviewSession {
+  id          Int             @id @default(autoincrement())
+  workerId    Int
+  familyId    Int
+  scheduledAt DateTime
+  status      InterviewStatus @default(SCHEDULED)
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@index([workerId, familyId])
+}
+
+model Contract {
+  id        Int            @id @default(autoincrement())
+  workerId  Int
+  familyId  Int
+  bookingId Int?           @unique
+  status    ContractStatus @default(DRAFT)
+  terms     String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  worker      Worker               @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  family      Family               @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  booking     Booking?             @relation(fields: [bookingId], references: [id])
+  acceptances ContractAcceptance[]
+}
+
+model ContractAcceptance {
+  id        Int      @id @default(autoincrement())
+  contractId Int
+  actorRole Role
+  acceptedAt DateTime @default(now())
+  ipAddress String?
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, actorRole])
+}
+
+model ShiftReport {
+  id           Int      @id @default(autoincrement())
+  bookingId    Int      @unique
+  activities   String
+  incidents    String?
+  handoverNotes String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model PaymentBreakdown {
+  id          Int      @id @default(autoincrement())
+  paymentId   Int      @unique
+  platformFee Int
+  workerPayout Int
+  createdAt   DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+}
+
