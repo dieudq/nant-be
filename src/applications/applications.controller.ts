@@ -37,8 +37,10 @@ export class ApplicationsController {
   @Get('job-posting/:id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN,Role.FAMILY)
-  @ApiOperation({ summary: 'Get all applications for a job posting (Admin only)' })
+  @Roles(Role.ADMIN, Role.FAMILY)
+  @ApiOperation({
+    summary: 'Get all applications for a job posting (Admin only)',
+  })
   @ApiResponse({ status: 200, description: 'List of applications' })
   async findByJobPosting(@Param('id') id: string) {
     return this.applicationsService.findByJobPosting(parseInt(id, 10));
@@ -65,7 +67,9 @@ export class ApplicationsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Update application status (Admin only - Accept/Reject)' })
+  @ApiOperation({
+    summary: 'Update application status (Admin only - Accept/Reject)',
+  })
   @ApiResponse({ status: 200, description: 'Status updated' })
   async updateStatus(
     @Param('id') id: string,

@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString, IsOptional, IsArray, IsEnum, IsBoolean } from 'class-validator';
+import {
+  IsNumber,
+  IsString,
+  IsOptional,
+  IsArray,
+  IsEnum,
+  IsBoolean,
+} from 'class-validator';
 import { JobType } from '@prisma/client';
 
 export class CreateWorkerDto {
@@ -13,7 +20,11 @@ export class CreateWorkerDto {
   @IsOptional()
   bio?: string;
 
-  @ApiProperty({ enum: JobType, isArray: true, example: ['BABY_CARE', 'ELDERLY_CARE'] })
+  @ApiProperty({
+    enum: JobType,
+    isArray: true,
+    example: ['BABY_CARE', 'ELDERLY_CARE'],
+  })
   @IsArray()
   @IsEnum(JobType, { each: true })
   jobTypes: JobType[];
@@ -51,7 +62,11 @@ export class CreateWorkerDto {
   @IsOptional()
   hasReliableTransportation?: boolean;
 
-  @ApiProperty({ required: false, isArray: true, example: ['Monday', 'Tuesday'] })
+  @ApiProperty({
+    required: false,
+    isArray: true,
+    example: ['Monday', 'Tuesday'],
+  })
   @IsArray()
   @IsString({ each: true })
   @IsOptional()

@@ -51,12 +51,18 @@ class CreateFamilyProfileOnFirstJobDto {
 }
 
 export class CreateJobPostingDto {
-  @ApiProperty({ example: 'Cần bảo mẫu trông trẻ 2 tuổi', description: 'Title of the job' })
+  @ApiProperty({
+    example: 'Cần bảo mẫu trông trẻ 2 tuổi',
+    description: 'Title of the job',
+  })
   @IsString()
   @IsNotEmpty()
   title: string;
 
-  @ApiProperty({ example: 'Mô tả chi tiết công việc...', description: 'Job description' })
+  @ApiProperty({
+    example: 'Mô tả chi tiết công việc...',
+    description: 'Job description',
+  })
   @IsString()
   @IsNotEmpty()
   description: string;

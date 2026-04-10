@@ -18,7 +18,10 @@ export class CreateBookingDto {
   @IsInt()
   workerId: number;
 
-  @ApiProperty({ example: '2026-05-20T00:00:00Z', description: 'Ngày làm việc' })
+  @ApiProperty({
+    example: '2026-05-20T00:00:00Z',
+    description: 'Ngày làm việc',
+  })
   @IsDateString()
   date: string;
 
@@ -34,7 +37,11 @@ export class CreateBookingDto {
   @IsInt()
   duration: number;
 
-  @ApiProperty({ example: 'BABYSITTING', enum: JobType, description: 'Loại hình dịch vụ' })
+  @ApiProperty({
+    example: 'BABYSITTING',
+    enum: JobType,
+    description: 'Loại hình dịch vụ',
+  })
   @IsEnum(JobType)
   service: string;
 
@@ -42,7 +49,10 @@ export class CreateBookingDto {
   @IsNumber()
   rate: number;
 
-  @ApiPropertyOptional({ example: 'Vui lòng đến đúng giờ', description: 'Ghi chú thêm' })
+  @ApiPropertyOptional({
+    example: 'Vui lòng đến đúng giờ',
+    description: 'Ghi chú thêm',
+  })
   @IsOptional()
   @IsString()
   notes?: string;

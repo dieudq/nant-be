@@ -217,10 +217,14 @@ export class FamiliesService {
     });
 
     if (!jobPosting) {
-      throw new NotFoundException(`Job posting with ID ${jobPostingId} not found`);
+      throw new NotFoundException(
+        `Job posting with ID ${jobPostingId} not found`,
+      );
     }
 
-    const appliedWorkerIds = jobPosting.applications.map((item) => item.workerId);
+    const appliedWorkerIds = jobPosting.applications.map(
+      (item) => item.workerId,
+    );
 
     const workers = await this.prisma.worker.findMany({
       where: {
@@ -275,7 +279,10 @@ export class FamiliesService {
                 ? jobPosting.hourlyRateMin
                 : jobPosting.hourlyRateMax;
             const distance = Math.abs(worker.hourlyRate - nearest);
-            scoreBreakdown.rate = Math.max(0, 20 - Math.floor(distance / 50000) * 5);
+            scoreBreakdown.rate = Math.max(
+              0,
+              20 - Math.floor(distance / 50000) * 5,
+            );
           }
         } else {
           scoreBreakdown.rate = 10;
@@ -295,9 +302,13 @@ export class FamiliesService {
           scoreBreakdown.training = 10;
         }
 
-        scoreBreakdown.rating = Math.round((Math.min(worker.rating, 5) / 5) * 15);
+        scoreBreakdown.rating = Math.round(
+          (Math.min(worker.rating, 5) / 5) * 15,
+        );
 
-        const normalizedRequirements = (jobPosting.requirements ?? '').toLowerCase();
+        const normalizedRequirements = (
+          jobPosting.requirements ?? ''
+        ).toLowerCase();
         if (normalizedRequirements.includes('non-smok') && worker.nonSmoker) {
           scoreBreakdown.requirements += 5;
         }
@@ -320,7 +331,10 @@ export class FamiliesService {
           scoreBreakdown.requirements += 5;
         }
 
-        const score = Object.values(scoreBreakdown).reduce((sum, part) => sum + part, 0);
+        const score = Object.values(scoreBreakdown).reduce(
+          (sum, part) => sum + part,
+          0,
+        );
 
         return {
           workerId: worker.id,

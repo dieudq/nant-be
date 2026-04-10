@@ -20,10 +20,14 @@ export class ApplicationsService {
       where: { id: jobPostingId },
     });
     if (!jobPosting) {
-      throw new NotFoundException(`Job posting with ID ${jobPostingId} not found`);
+      throw new NotFoundException(
+        `Job posting with ID ${jobPostingId} not found`,
+      );
     }
     if (jobPosting.status !== 'OPEN') {
-      throw new BadRequestException('This job posting is no longer open for applications');
+      throw new BadRequestException(
+        'This job posting is no longer open for applications',
+      );
     }
 
     // Check if worker exists and is approved
@@ -34,7 +38,9 @@ export class ApplicationsService {
       throw new NotFoundException(`Worker with ID ${workerId} not found`);
     }
     if (!worker.isApproved) {
-      throw new BadRequestException('Worker profile must be approved to apply for jobs');
+      throw new BadRequestException(
+        'Worker profile must be approved to apply for jobs',
+      );
     }
 
     // Check if already applied
@@ -56,13 +62,13 @@ export class ApplicationsService {
       include: {
         worker: {
           include: {
-            user: { select: { name: true } }
-          }
+            user: { select: { name: true } },
+          },
         },
         jobPosting: {
-          select: { title: true }
-        }
-      }
+          select: { title: true },
+        },
+      },
     });
   }
 
@@ -73,14 +79,14 @@ export class ApplicationsService {
         worker: {
           include: {
             user: {
-              select: { id: true, name: true, email: true, phone: true }
+              select: { id: true, name: true, email: true, phone: true },
             },
             documents: true,
             reviews: true,
-          }
-        }
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -92,20 +98,20 @@ export class ApplicationsService {
           include: {
             family: {
               include: {
-                user: { select: { name: true } }
-              }
-            }
-          }
-        }
+                user: { select: { name: true } },
+              },
+            },
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async updateStatus(id: number, status: ApplicationStatus) {
     const application = await this.prisma.jobApplication.findUnique({
       where: { id },
-      include: { jobPosting: true }
+      include: { jobPosting: true },
     });
 
     if (!application) {
@@ -119,9 +125,9 @@ export class ApplicationsService {
       });
 
       // If accepted, we might want to automatically close the job posting or create a booking
-      // For now, just update status. 
+      // For now, just update status.
       // In a real scenario, accepting might move the process to "Interview" or "Booking"
-      
+
       if (status === 'ACCEPTED') {
         // Optionally mark job as FILLED if family wants
         // await tx.jobPosting.update({ where: { id: application.jobPostingId }, data: { status: 'FILLED' } });
@@ -136,16 +142,16 @@ export class ApplicationsService {
       where: { id },
       include: {
         worker: {
-          include: { user: true }
+          include: { user: true },
         },
         jobPosting: {
           include: {
             family: {
-              include: { user: true }
-            }
-          }
-        }
-      }
+              include: { user: true },
+            },
+          },
+        },
+      },
     });
     if (!application) {
       throw new NotFoundException(`Application with ID ${id} not found`);

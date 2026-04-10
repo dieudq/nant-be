@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Param, Body, UseGuards, Query, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  UseGuards,
+  Query,
+  Request,
+  UnauthorizedException,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -15,6 +25,13 @@ import { CreateWorkerDto } from './dto/create-worker.dto';
 import { CreateWorkerDocumentDto } from './dto/create-worker-document.dto';
 import { CreateTrainingAttemptDto } from './dto/create-training-attempt.dto';
 import { ScheduleInterviewDto } from './dto/schedule-interview.dto';
+
+type AuthenticatedRequest = {
+  user?: {
+    userId?: number;
+    sub?: number;
+  };
+};
 
 @ApiTags('Users')
 @Controller('users')
@@ -65,8 +82,15 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create worker profile' })
   @ApiResponse({ status: 201, description: 'Worker created' })
-  async createWorkerProfile(@Body() dto: CreateWorkerDto, @Request() req) {
-    return this.usersService.createWorkerProfile(req.user.userId, dto);
+  async createWorkerProfile(
+    @Body() dto: CreateWorkerDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const userId = req.user?.userId ?? req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Invalid token payload');
+    }
+    return this.usersService.createWorkerProfile(userId, dto);
   }
 
   @Post('workers/:id/approve')
