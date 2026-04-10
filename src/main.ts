@@ -12,7 +12,13 @@ async function bootstrap() {
   app.enableCors();
 
   // Use global validation pipe
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
 
   // Swagger configuration
   const config = new DocumentBuilder()

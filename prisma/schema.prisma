@@ -54,41 +54,42 @@ enum WorkerDocumentType {
 }
 
 model Worker {
-  id             Int      @id @default(autoincrement())
-  userId         Int      @unique
-  employeeCode   String?  @unique
-  bio            String?
-  jobTypes       JobType[]
-  languages      String[] // JSON array of language skills
-  services       String[] // JSON array of services offered
-  hourlyRate     Int // in VND
-  dailyRate      Int // in VND
-  travelRate     Int? // in VND
-  rating         Float    @default(0)
-  reviewCount    Int      @default(0)
-  isApproved     Boolean  @default(false)
-  verificationStatus VerificationStatus @default(PENDING)
-  nonSmoker      Boolean  @default(true)
-  hasReliableTransportation Boolean @default(false)
-  backgroundCheckStatus VerificationStatus @default(PENDING)
-  drugScreenStatus VerificationStatus @default(PENDING)
-  trainingPassed Boolean  @default(false)
-  introVideoViUrl String?
-  introVideoEnUrl String?
-  profilePhotoUrl String?
-  availability   String[] // Days of week
-  certifications String[] // JSON array
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                        Int                @id @default(autoincrement())
+  userId                    Int                @unique
+  employeeCode              String?            @unique
+  bio                       String?
+  jobTypes                  JobType[]
+  languages                 String[] // JSON array of language skills
+  services                  String[] // JSON array of services offered
+  hourlyRate                Int // in VND
+  dailyRate                 Int // in VND
+  travelRate                Int? // in VND
+  rating                    Float              @default(0)
+  reviewCount               Int                @default(0)
+  isApproved                Boolean            @default(false)
+  verificationStatus        VerificationStatus @default(PENDING)
+  nonSmoker                 Boolean            @default(true)
+  hasReliableTransportation Boolean            @default(false)
+  backgroundCheckStatus     VerificationStatus @default(PENDING)
+  drugScreenStatus          VerificationStatus @default(PENDING)
+  trainingPassed            Boolean            @default(false)
+  introVideoViUrl           String?
+  introVideoEnUrl           String?
+  profilePhotoUrl           String?
+  availability              String[] // Days of week
+  certifications            String[] // JSON array
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id])
-  bookings Booking[]
-  reviews  Review[]
-  documents WorkerDocument[]
-  references WorkerReference[]
+  user             User               @relation(fields: [userId], references: [id])
+  bookings         Booking[]
+  reviews          Review[]
+  documents        WorkerDocument[]
+  references       WorkerReference[]
   trainingAttempts TrainingAttempt[]
-  interviews InterviewSession[]
-  contracts Contract[]
+  interviews       InterviewSession[]
+  contracts        Contract[]
+  jobApplications  JobApplication[]
 }
 
 model Family {
@@ -107,11 +108,67 @@ model Family {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id])
-  bookings Booking[]
-  reviews  Review[]
-  interviews InterviewSession[]
-  contracts Contract[]
+  user        User               @relation(fields: [userId], references: [id])
+  bookings    Booking[]
+  reviews     Review[]
+  interviews  InterviewSession[]
+  contracts   Contract[]
+  jobPostings JobPosting[]
+}
+
+model JobPosting {
+  id            Int              @id @default(autoincrement())
+  familyId      Int
+  title         String
+  description   String
+  jobType       JobType
+  location      String
+  numChildren   Int?
+  childrenAges  String?
+  hourlyRateMin Int?
+  hourlyRateMax Int?
+  startDate     DateTime?
+  endDate       DateTime?
+  startTime     String? // HH:mm
+  endTime       String? // HH:mm
+  requirements  String?
+  status        JobPostingStatus @default(OPEN)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  family       Family           @relation(fields: [familyId], references: [id])
+  applications JobApplication[]
+
+  @@index([familyId])
+}
+
+model JobApplication {
+  id           Int               @id @default(autoincrement())
+  jobPostingId Int
+  workerId     Int
+  coverLetter  String?
+  status       ApplicationStatus @default(PENDING)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  jobPosting JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  worker     Worker     @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@unique([jobPostingId, workerId])
+  @@index([jobPostingId, workerId])
+}
+
+enum JobPostingStatus {
+  OPEN
+  CLOSED
+  FILLED
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  ACCEPTED
+  REJECTED
 }
 
 model Booking {
@@ -130,11 +187,11 @@ model Booking {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  family  Family   @relation(fields: [familyId], references: [id])
-  worker  Worker   @relation(fields: [workerId], references: [id])
-  payment Payment?
-  review  Review?
-  contract Contract?
+  family      Family       @relation(fields: [familyId], references: [id])
+  worker      Worker       @relation(fields: [workerId], references: [id])
+  payment     Payment?
+  review      Review?
+  contract    Contract?
   shiftReport ShiftReport?
 }
 
@@ -170,7 +227,7 @@ model Payment {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  booking Booking @relation(fields: [bookingId], references: [id])
+  booking   Booking           @relation(fields: [bookingId], references: [id])
   breakdown PaymentBreakdown?
 }
 
@@ -287,11 +344,11 @@ model Contract {
 }
 
 model ContractAcceptance {
-  id        Int      @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   contractId Int
-  actorRole Role
+  actorRole  Role
   acceptedAt DateTime @default(now())
-  ipAddress String?
+  ipAddress  String?
 
   contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
@@ -299,24 +356,23 @@ model ContractAcceptance {
 }
 
 model ShiftReport {
-  id           Int      @id @default(autoincrement())
-  bookingId    Int      @unique
-  activities   String
-  incidents    String?
+  id            Int      @id @default(autoincrement())
+  bookingId     Int      @unique
+  activities    String
+  incidents     String?
   handoverNotes String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }
 
 model PaymentBreakdown {
-  id          Int      @id @default(autoincrement())
-  paymentId   Int      @unique
-  platformFee Int
+  id           Int      @id @default(autoincrement())
+  paymentId    Int      @unique
+  platformFee  Int
   workerPayout Int
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
 
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 }
-

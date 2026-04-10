@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -8,6 +16,8 @@ import {
 import { BookingsService } from './bookings.service';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 import { CreateShiftReportDto } from './dto/create-shift-report.dto';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { CreateBookingDto } from './dto/create-booking.dto';
 
 @ApiTags('Bookings')
 @Controller('bookings')
@@ -17,8 +27,8 @@ export class BookingsController {
   @Get()
   @ApiOperation({ summary: 'Get all bookings' })
   @ApiResponse({ status: 200, description: 'List of bookings' })
-  async findAll() {
-    return this.bookingsService.findAll();
+  async findAll(@Query() pagination: PaginationQueryDto) {
+    return this.bookingsService.findAll(pagination);
   }
 
   @Get(':id')
@@ -34,8 +44,8 @@ export class BookingsController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create new booking' })
   @ApiResponse({ status: 201, description: 'Booking created' })
-  async create(@Body() data: any) {
-    return this.bookingsService.create(data);
+  async create(@Body() dto: CreateBookingDto) {
+    return this.bookingsService.create(dto);
   }
 
   @Post(':id/confirm')
