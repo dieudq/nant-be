@@ -11,7 +11,24 @@ DATABASE_URL="postgresql://user:password@localhost:5432/nanny_marketplace_db"
 JWT_SECRET="your-secret-key-here"
 NODE_ENV="development"
 PORT=3000
+PAYLOAD_LIMIT="1mb"
+
+# DigitalOcean Spaces (direct upload)
+DO_SPACES_KEY="your-spaces-key"
+DO_SPACES_SECRET="your-spaces-secret"
+DO_SPACES_REGION="sgp1"
+DO_SPACES_BUCKET="nanny-asset"
+DO_SPACES_ENDPOINT="https://sgp1.digitaloceanspaces.com"
+DO_SPACES_CDN="https://nanny-asset.sgp1.cdn.digitaloceanspaces.com"
+UPLOAD_URL_EXPIRES=3600
 ```
+
+## Direct File Upload Flow (FE -> Spaces)
+
+1. FE calls `POST /uploads/presign` with JWT.
+2. BE returns `uploadUrl` + `fileUrl`.
+3. FE uploads file directly to Spaces using `PUT uploadUrl`.
+4. FE sends `fileUrl` to business APIs (worker profile/document endpoints).
 
 ## Installation
 

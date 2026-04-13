@@ -103,7 +103,42 @@ Get current user from token.
 
 ---
 
-## 3. Users / Workers
+
+## 3. Uploads
+
+### `POST /uploads/presign` (Auth)
+Generate a temporary signed URL so FE can upload files directly to DigitalOcean Spaces.
+
+Headers:
+- `Authorization: Bearer <access_token>`
+
+Body:
+```json
+{
+  "filename": "avatar.jpg",
+  "contentType": "image/jpeg",
+  "folder": "workers/profile"
+}
+```
+
+Response `201`:
+```json
+{
+  "uploadUrl": "https://nanny-asset.sgp1.digitaloceanspaces.com/...",
+  "fileUrl": "https://nanny-asset.sgp1.cdn.digitaloceanspaces.com/workers/profile/1712999999999-uuid-avatar.jpg",
+  "key": "workers/profile/1712999999999-uuid-avatar.jpg",
+  "expiresIn": 3600
+}
+```
+
+FE flow:
+1. Call `POST /uploads/presign`.
+2. Upload directly to `uploadUrl` with HTTP `PUT` and matching `Content-Type`.
+3. Save `fileUrl` to worker profile/document APIs.
+
+---
+
+## 4. Users / Workers
 
 ### `GET /users/:id` (Auth)
 Get user detail (includes worker/family relation if available).

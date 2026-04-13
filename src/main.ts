@@ -31,6 +31,7 @@ async function bootstrap() {
     .addTag('Workers', 'Worker profiles and management')
     .addTag('Families', 'Family profiles')
     .addTag('Bookings', 'Booking management')
+    .addTag('Uploads', 'Presigned upload URL generation')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
