@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
@@ -341,6 +341,19 @@ export class UsersService {
       where: { workerId },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async deleteWorkerDocument(workerId: number, docId: number): Promise<void> {
+    const result = await this.prisma.workerDocument.deleteMany({
+      where: {
+        id: docId,
+        workerId,
+      },
+    });
+
+    if (result.count === 0) {
+      throw new NotFoundException('Worker document not found');
+    }
   }
 
   async createTrainingAttempt(workerId: number, dto: CreateTrainingAttemptDto) {

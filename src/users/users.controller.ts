@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -244,6 +245,24 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Worker documents' })
   async getWorkerDocuments(@Param('id') id: string) {
     return this.usersService.getWorkerDocuments(parseInt(id, 10));
+  }
+
+  @Delete('workers/:workerId/documents/:docId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Delete a worker document' })
+  @ApiParam({ name: 'workerId', type: Number, description: 'Worker ID' })
+  @ApiParam({ name: 'docId', type: Number, description: 'Document ID' })
+  @ApiResponse({ status: 200, description: 'Worker document deleted' })
+  @ApiResponse({ status: 404, description: 'Worker document not found' })
+  async deleteWorkerDocument(
+    @Param('workerId') workerId: string,
+    @Param('docId') docId: string,
+  ) {
+    return this.usersService.deleteWorkerDocument(
+      parseInt(workerId, 10),
+      parseInt(docId, 10),
+    );
   }
 
   @Post('workers/:id/training-attempts')
