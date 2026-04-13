@@ -88,7 +88,7 @@ export class UsersService {
     };
 
     if (filters?.experience) {
-      where.experience = {
+      where.bio = {
         contains: String(filters.experience),
         mode: 'insensitive',
       };
@@ -257,8 +257,7 @@ export class UsersService {
     return this.prisma.worker.create({
       data: {
         employeeCode: dto.employeeCode,
-        bio: dto.bio,
-        experience: dto.experience,
+        bio: dto.bio ?? dto.experience,
         jobTypes: dto.jobTypes,
         languages: dto.languages,
         services: dto.services,
@@ -281,7 +280,6 @@ export class UsersService {
     const updateData: Prisma.WorkerUpdateInput = {
       employeeCode: dto.employeeCode,
       bio: dto.bio,
-      experience: dto.experience,
       jobTypes: dto.jobTypes,
       languages: dto.languages,
       services: dto.services,
@@ -293,6 +291,10 @@ export class UsersService {
       availability: dto.availability,
       certifications: dto.certifications,
     };
+
+    if (dto.experience !== undefined && dto.bio === undefined) {
+      updateData.bio = dto.experience;
+    }
 
     return this.prisma.worker.update({
       where: { id },
