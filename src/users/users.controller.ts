@@ -8,12 +8,18 @@ import {
   Query,
   Request,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
+  ApiBody,
+  ApiParam,
   ApiResponse,
+  ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiUnauthorizedResponse,
+  ApiForbiddenResponse,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt.guard';
@@ -67,6 +73,31 @@ export class UsersController {
     return this.usersService.findWorkers(pagination);
   }
 
+  @Get('workers/profile')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get current worker profile',
+    description:
+      'Return worker profile for current logged-in user. Useful after create/update profile flow.',
+  })
+  @ApiResponse({ status: 200, description: 'Worker profile detail' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT token' })
+  @ApiResponse({ status: 404, description: 'Worker profile not found' })
+  async getMyWorkerProfile(@Request() req: AuthenticatedRequest) {
+    const userId = req.user?.userId ?? req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Invalid token payload');
+    }
+
+    const worker = await this.usersService.getWorkerProfileByUserId(userId);
+    if (!worker) {
+      throw new NotFoundException('Worker profile not found');
+    }
+
+    return worker;
+  }
+
   @Get('workers/pending')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -80,8 +111,49 @@ export class UsersController {
   @Post('workers/profile')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Create worker profile' })
-  @ApiResponse({ status: 201, description: 'Worker created' })
+  @ApiOperation({
+    summary: 'Create worker profile',
+    description:
+      'Create profile metadata for current logged-in worker. File upload must be done separately and attached via worker documents API.',
+  })
+  @ApiBody({
+    type: CreateWorkerDto,
+    examples: {
+      basic: {
+        summary: 'Basic profile',
+        value: {
+          jobTypes: ['BABYSITTING'],
+          languages: ['Vietnamese', 'English'],
+          services: ['Baby care', 'Light housework'],
+          hourlyRate: 100000,
+          dailyRate: 800000,
+        },
+      },
+      full: {
+        summary: 'Full profile',
+        value: {
+          employeeCode: 'WK-2026-0001',
+          bio: 'Patient, supportive, and experienced with infants.',
+          jobTypes: ['BABYSITTING', 'NANNY'],
+          languages: ['Vietnamese', 'English'],
+          services: ['Feeding', 'Diapering', 'Light housework'],
+          hourlyRate: 120000,
+          dailyRate: 900000,
+          travelRate: 100000,
+          nonSmoker: true,
+          hasReliableTransportation: true,
+          availability: ['Monday', 'Tuesday', 'Wednesday'],
+          certifications: ['CPR', 'First Aid'],
+          experience: '3 years infant care',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Worker profile created' })
+  @ApiBadRequestResponse({
+    description: 'Validation error or worker profile already exists',
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT token' })
   async createWorkerProfile(
     @Body() dto: CreateWorkerDto,
     @Request() req: AuthenticatedRequest,
@@ -116,10 +188,47 @@ export class UsersController {
   @Post('workers/:id/documents')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Attach compliance document to worker profile' })
+  @ApiOperation({
+    summary: 'Attach worker document metadata',
+    description:
+      'Store document/profile file metadata after FE uploads file to cloud storage and receives fileUrl. Use type PROFILE_PHOTO for profile image.',
+  })
+  @ApiParam({ name: 'id', type: Number, description: 'Worker ID' })
+  @ApiBody({
+    type: CreateWorkerDocumentDto,
+    examples: {
+      profilePhoto: {
+        summary: 'Profile photo metadata',
+        value: {
+          type: 'PROFILE_PHOTO',
+          title: 'Profile photo - front face',
+          fileUrl: 'https://cdn.example.com/workers/21/profile.jpg',
+          notes: 'Uploaded by FE from worker onboarding',
+        },
+      },
+      idCard: {
+        summary: 'ID card metadata',
+        value: {
+          type: 'ID_CARD_LEVEL_2',
+          title: 'CCCD level 2',
+          fileUrl: 'https://cdn.example.com/workers/21/cccd.jpg',
+          issuedAt: '2024-06-10T00:00:00.000Z',
+          expiresAt: '2034-06-10T00:00:00.000Z',
+          notes: 'Front + back merged PDF',
+        },
+      },
+    },
+  })
   @ApiResponse({
     status: 201,
-    description: 'Document uploaded metadata created',
+    description: 'Worker document metadata created',
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid worker id or request payload',
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT token' })
+  @ApiForbiddenResponse({
+    description: 'No permission to upload this worker data',
   })
   async createWorkerDocument(
     @Param('id') id: string,

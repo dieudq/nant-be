@@ -60,22 +60,42 @@ Get worker by ID
 curl http://localhost:3000/workers/1
 ```
 
-### POST /workers
+### POST /users/workers/profile
 
-Create worker profile (requires JWT)
+Create worker profile for current logged-in user (requires JWT).
+
+Required fields: `jobTypes`, `languages`, `services`, `hourlyRate`, `dailyRate`.
 
 ```bash
-curl -X POST http://localhost:3000/workers \
+curl -X POST http://localhost:3000/users/workers/profile \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "userId": 1,
-    "languages": ["English B2", "Vietnamese"],
-    "services": ["Babysitting", "House Help"],
-    "hourlyRate": 250000,
-    "dailyRate": 3500000,
-    "availability": ["Monday", "Tuesday", "Wednesday"]
+    "employeeCode": "WK-2026-0001",
+    "bio": "Patient and energetic nanny.",
+    "jobTypes": ["BABYSITTING", "NANNY"],
+    "languages": ["Vietnamese", "English"],
+    "services": ["Feeding", "Diapering", "Light housework"],
+    "hourlyRate": 120000,
+    "dailyRate": 900000,
+    "travelRate": 100000,
+    "nonSmoker": true,
+    "hasReliableTransportation": true,
+    "availability": ["Monday", "Tuesday", "Wednesday"],
+    "certifications": ["CPR", "First Aid"],
+    "experience": "3 years infant care"
   }'
+```
+
+### GET /users/workers/profile
+
+Get current worker profile for logged-in user (requires JWT).
+
+Response includes full worker information: `user`, `documents`, `references`, `trainingAttempts`, `reviews`, `interviews`, `bookings`, `contracts`, and `jobApplications`.
+
+```bash
+curl -X GET http://localhost:3000/users/workers/profile \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### GET /workers/pending
@@ -105,20 +125,24 @@ curl -X POST http://localhost:3000/workers/1/reject \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
-### POST /workers/:id/documents
+### POST /users/workers/:id/documents
 
 Attach compliance document to worker profile (requires JWT)
 
 ```bash
-curl -X POST http://localhost:3000/workers/1/documents \
+curl -X POST http://localhost:3000/users/workers/1/documents \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "type": "ID_CARD_LEVEL_2",
-    "title": "CCCD level 2",
-    "fileUrl": "https://cdn.example.com/docs/worker-1-cccd-front.jpg"
+    "type": "PROFILE_PHOTO",
+    "title": "Worker profile photo",
+    "fileUrl": "https://cdn.example.com/workers/1/profile.jpg",
+    "notes": "Uploaded from FE onboarding"
   }'
 ```
+
+Use `type = PROFILE_PHOTO` for profile photo metadata.
+For compliance documents, use types such as `ID_CARD_LEVEL_2`, `HEALTH_CERT`, `REFERENCE_LETTER`, etc.
 
 ### POST /workers/:id/training-attempts
 

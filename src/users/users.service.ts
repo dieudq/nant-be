@@ -119,6 +119,134 @@ export class UsersService {
     };
   }
 
+  async getWorkerProfileByUserId(userId: number) {
+    return this.prisma.worker.findUnique({
+      where: { userId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            role: true,
+          },
+        },
+        documents: {
+          orderBy: { createdAt: 'desc' },
+        },
+        references: true,
+        trainingAttempts: {
+          orderBy: { takenAt: 'desc' },
+        },
+        reviews: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            booking: true,
+            family: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    phone: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        interviews: {
+          orderBy: { scheduledAt: 'desc' },
+          include: {
+            family: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    phone: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        bookings: {
+          orderBy: { date: 'desc' },
+          include: {
+            family: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    phone: true,
+                  },
+                },
+              },
+            },
+            payment: {
+              include: {
+                breakdown: true,
+              },
+            },
+            review: true,
+            contract: {
+              include: {
+                acceptances: true,
+              },
+            },
+            shiftReport: true,
+          },
+        },
+        contracts: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            family: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    phone: true,
+                  },
+                },
+              },
+            },
+            booking: true,
+            acceptances: true,
+          },
+        },
+        jobApplications: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            jobPosting: {
+              include: {
+                family: {
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
   async createWorkerProfile(userId: number, dto: CreateWorkerDto) {
     return this.prisma.worker.create({
       data: {

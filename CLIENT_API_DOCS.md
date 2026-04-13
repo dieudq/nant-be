@@ -115,23 +115,162 @@ Query:
 - `page` (default `1`)
 - `limit` (default `10`)
 
+### `GET /users/workers/profile` (Auth)
+Get current logged-in user's worker profile.
+
+Required headers:
+- `Authorization: Bearer <access_token>`
+
+Success response (`200`):
+- Full worker profile with nested:
+  - `user` (no password)
+  - `documents`
+  - `references`
+  - `trainingAttempts`
+  - `reviews` (includes `family.user`, `booking`)
+  - `interviews` (includes `family.user`)
+  - `bookings` (includes `family.user`, `payment.breakdown`, `review`, `contract.acceptances`, `shiftReport`)
+  - `contracts` (includes `family.user`, `booking`, `acceptances`)
+  - `jobApplications` (includes `jobPosting.family.user`)
+
+Common errors:
+- `401` Missing/invalid token
+- `404` Worker profile not found
+
 ### `POST /users/workers/profile` (Auth)
 Create worker profile for current logged-in user.
+
+Purpose:
+- Save worker profile information (text/structured data).
+- For files (avatar, ID, certificates, intro video), FE uploads file to storage first and then calls document API with `fileUrl`.
+
+Required headers:
+- `Authorization: Bearer <access_token>`
+- `Content-Type: application/json`
+
+Body fields:
+
+| Field | Type | Required | Notes |
+| :--- | :--- | :---: | :--- |
+| `jobTypes` | `JobType[]` | Yes | Allowed: `BABYSITTING`, `NANNY`, `MAID` |
+| `languages` | `string[]` | Yes | Example: `["Vietnamese", "English"]` |
+| `services` | `string[]` | Yes | Example: `["Feeding", "Light cleaning"]` |
+| `hourlyRate` | `number` | Yes | VND/hour |
+| `dailyRate` | `number` | Yes | VND/day |
+| `employeeCode` | `string` | No | Internal worker code |
+| `bio` | `string` | No | Short self-introduction |
+| `travelRate` | `number` | No | VND for travel/transport |
+| `nonSmoker` | `boolean` | No | Default backend value if omitted |
+| `hasReliableTransportation` | `boolean` | No | Has own/reliable transport |
+| `availability` | `string[]` | No | Example weekdays/shifts |
+| `certifications` | `string[]` | No | Example: `CPR`, `First Aid` |
+| `experience` | `string` | No | Human-readable experience summary |
+
+Body example (full):
+```json
+{
+  "employeeCode": "WK-2026-0001",
+  "bio": "Patient and energetic nanny with infant care experience.",
+  "jobTypes": ["BABYSITTING", "NANNY"],
+  "languages": ["Vietnamese", "English"],
+  "services": ["Feeding", "Diapering", "Light housework"],
+  "hourlyRate": 120000,
+  "dailyRate": 900000,
+  "travelRate": 100000,
+  "nonSmoker": true,
+  "hasReliableTransportation": true,
+  "availability": ["Monday", "Tuesday", "Wednesday"],
+  "certifications": ["CPR", "First Aid"],
+  "experience": "3 years caring for infants and toddlers"
+}
+```
+
+Success response (`201`) example:
+```json
+{
+  "id": 21,
+  "userId": 12,
+  "employeeCode": "WK-2026-0001",
+  "bio": "Patient and energetic nanny with infant care experience.",
+  "jobTypes": ["BABYSITTING", "NANNY"],
+  "languages": ["Vietnamese", "English"],
+  "services": ["Feeding", "Diapering", "Light housework"],
+  "hourlyRate": 120000,
+  "dailyRate": 900000,
+  "travelRate": 100000,
+  "nonSmoker": true,
+  "hasReliableTransportation": true,
+  "availability": ["Monday", "Tuesday", "Wednesday"],
+  "certifications": ["CPR", "First Aid"],
+  "experience": "3 years caring for infants and toddlers",
+  "isApproved": false,
+  "verificationStatus": "PENDING",
+  "user": {
+    "id": 12,
+    "email": "worker@example.com",
+    "name": "Nguyen Linh",
+    "phone": "0901234567",
+    "role": "WORKER"
+  }
+}
+```
+
+Common errors:
+- `400` Validation failed (missing required fields, wrong enum/type)
+- `400` Worker profile already exists for this user
+- `401` Missing/invalid token
 
 ### `POST /users/workers/:id/documents` (Auth)
 Create worker document metadata.
 
+Use cases:
+- Upload profile photo metadata (`type = PROFILE_PHOTO`)
+- Upload compliance docs (`ID_CARD_LEVEL_2`, `HEALTH_CERT`, etc.)
+
+Flow:
+1. FE uploads file to S3/Cloudinary/Firebase/etc.
+2. FE gets public or signed URL.
+3. FE calls this API with `fileUrl`.
+
 Body:
 ```json
 {
-  "type": "ID_CARD_LEVEL_2",
-  "title": "National ID",
-  "fileUrl": "https://storage.example.com/id.jpg",
+  "type": "PROFILE_PHOTO",
+  "title": "Worker profile photo",
+  "fileUrl": "https://storage.example.com/workers/21/profile.jpg",
   "issuedAt": "2026-01-01T00:00:00Z",
   "expiresAt": "2036-01-01T00:00:00Z",
-  "notes": "Verified copy"
+  "notes": "Optional note"
 }
 ```
+
+Field notes:
+- `type` (required): enum `WorkerDocumentType`
+- `title` (required): human-readable title for FE/Admin
+- `fileUrl` (required): URL returned from your storage upload flow
+- `issuedAt` (optional): ISO datetime
+- `expiresAt` (optional): ISO datetime
+- `notes` (optional): additional metadata
+
+Success response (`201`) example:
+```json
+{
+  "id": 77,
+  "workerId": 21,
+  "type": "PROFILE_PHOTO",
+  "title": "Worker profile photo",
+  "fileUrl": "https://storage.example.com/workers/21/profile.jpg",
+  "issuedAt": null,
+  "expiresAt": null,
+  "notes": "Optional note",
+  "createdAt": "2026-04-13T07:05:00.000Z"
+}
+```
+
+Common errors:
+- `400` Invalid payload/date format/worker id
+- `401` Missing or invalid token
+- `403` No permission
 
 ### `GET /users/workers/:id/documents` (Auth)
 Get worker documents.
