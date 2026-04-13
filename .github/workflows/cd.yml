@@ -59,6 +59,7 @@ jobs:
       DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
       APP_NAME: ${{ secrets.APP_NAME || 'nant-be' }}
       RUN_MIGRATE_DEPLOY: ${{ secrets.RUN_MIGRATE_DEPLOY || 'true' }}
+      PRISMA_BASELINE_MIGRATION: ${{ secrets.PRISMA_BASELINE_MIGRATION }}
       APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
@@ -109,7 +110,7 @@ jobs:
           fi
 
           ssh -p "${DEPLOY_PORT:-22}" "$DEPLOY_USER@$DEPLOY_HOST" \
-            "DEPLOY_PATH='$DEPLOY_PATH' APP_NAME='$APP_NAME' RUN_MIGRATE_DEPLOY='$RUN_MIGRATE_DEPLOY' APP_ENV_FILE_B64='$APP_ENV_FILE_B64' DATABASE_URL_B64='$DATABASE_URL_B64' bash -s" <<'EOF'
+            "DEPLOY_PATH='$DEPLOY_PATH' APP_NAME='$APP_NAME' RUN_MIGRATE_DEPLOY='$RUN_MIGRATE_DEPLOY' PRISMA_BASELINE_MIGRATION='$PRISMA_BASELINE_MIGRATION' APP_ENV_FILE_B64='$APP_ENV_FILE_B64' DATABASE_URL_B64='$DATABASE_URL_B64' bash -s" <<'EOF'
           set -e
 
           # Load nvm for non-interactive SSH shells when available.
@@ -151,7 +152,17 @@ jobs:
               echo "DATABASE_URL is missing. Set APP_ENV_FILE secret (or provide DATABASE_URL in server env)."
               exit 1
             fi
-            npx prisma migrate deploy
+
+            if ! npx prisma migrate deploy; then
+              if [ -n "$PRISMA_BASELINE_MIGRATION" ]; then
+                echo "migrate deploy failed. Attempting one-time baseline with migration: $PRISMA_BASELINE_MIGRATION"
+                npx prisma migrate resolve --applied "$PRISMA_BASELINE_MIGRATION"
+                npx prisma migrate deploy
+              else
+                echo "migrate deploy failed. If this is an existing non-empty DB (P3005), set PRISMA_BASELINE_MIGRATION secret (example: init)."
+                exit 1
+              fi
+            fi
           fi
 
           if command -v pm2 >/dev/null 2>&1; then

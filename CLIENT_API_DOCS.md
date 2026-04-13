@@ -51,8 +51,55 @@ Body:
 }
 ```
 
+### `POST /auth/google/callback` (Recommended)
+Google login endpoint for FE. FE obtains `idToken` from Google SDK, then sends it to backend for verification.
+
+Body:
+```json
+{
+  "idToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6Ij...",
+  "role": "WORKER"
+}
+```
+
+Notes:
+- `idToken`: required
+- `role`: optional, only used on first login when user does not exist yet
+- supported values: `WORKER`, `FAMILY` (if omitted, backend defaults to `WORKER`)
+
+Success response (`200`):
+```json
+{
+  "access_token": "<jwt_token>",
+  "user": {
+    "id": 12,
+    "email": "worker@example.com",
+    "name": "Worker A",
+    "role": "WORKER"
+  }
+}
+```
+
+Common error responses:
+- `401 Invalid Google token`
+- `401 Google email is not verified`
+- `401 Google token audience mismatch`
+- `401 Google token does not contain email`
+
+### `GET /auth/google/callback` (Legacy - Deprecated)
+Legacy query mode for backward compatibility only. New FE integrations should use `POST /auth/google/callback`.
+
+Query example:
+`/auth/google/callback?idToken=<google_id_token>&role=WORKER`
+
 ### `GET /auth/me` (Auth)
 Get current user from token.
+
+### FE integration flow (Google)
+1. FE logs user in with Google and gets `idToken`.
+2. FE calls `POST /auth/google/callback` with JSON body.
+3. FE stores `access_token` from response.
+4. FE includes `Authorization: Bearer <access_token>` for protected APIs.
 
 ---
 
