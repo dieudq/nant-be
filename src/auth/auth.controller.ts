@@ -1,4 +1,12 @@
-import { Controller, Post, Body, UseGuards, Get, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Get,
+  Req,
+  Query,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -9,6 +17,7 @@ import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { JwtAuthGuard } from './jwt.guard';
 import { LoginDto } from './dto/login.dto';
+import { GoogleCallbackDto } from './dto/google-callback.dto';
 
 type AuthenticatedRequest = {
   user?: {
@@ -36,6 +45,27 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto.email, loginDto.password);
+  }
+
+  @Post('google/callback')
+  @ApiOperation({
+    summary: 'Google login (recommended, body payload)',
+  })
+  @ApiResponse({ status: 200, description: 'Google login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid Google token' })
+  async googleCallbackPost(@Body() body: GoogleCallbackDto) {
+    return this.authService.loginWithGoogleIdToken(body.idToken, body.role);
+  }
+
+  @Get('google/callback')
+  @ApiOperation({
+    summary: 'Google callback (legacy query mode)',
+    deprecated: true,
+  })
+  @ApiResponse({ status: 200, description: 'Google login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid Google token' })
+  async googleCallbackLegacy(@Query() query: GoogleCallbackDto) {
+    return this.authService.loginWithGoogleIdToken(query.idToken, query.role);
   }
 
   @Get('me')
