@@ -3,10 +3,15 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { AuthService } from './auth/auth.service';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
   const authService = app.get(AuthService);
+  const payloadLimit = process.env.PAYLOAD_LIMIT ?? '5mb';
+
+  app.use(json({ limit: payloadLimit }));
+  app.use(urlencoded({ extended: true, limit: payloadLimit }));
 
   // Enable CORS
   app.enableCors();
