@@ -212,7 +212,7 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const { password, ...safeUser } = user;
+    const { password: _password, ...safeUser } = user;
     const profilePhotoUrl = user.worker?.documents?.[0]?.fileUrl ?? null;
 
     return {
