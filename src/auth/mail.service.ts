@@ -1,29 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import * as sgMail from '@sendgrid/mail';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private transporter: nodemailer.Transporter;
 
   constructor(private configService: ConfigService) {
-    // Cast to any because @types/nodemailer omits the `family` socket option.
-    // family: 4 forces IPv4 to avoid ENETUNREACH on servers without IPv6.
-    const options: any = {
-      host: this.configService.get<string>('SMTP_HOST'),
-      port: this.configService.get<number>('SMTP_PORT') ?? 587,
-      secure: this.configService.get<string>('SMTP_SECURE') === 'true',
-      family: 4,
-      connectionTimeout: 5000,
-      greetingTimeout: 5000,
-      socketTimeout: 10000,
-      auth: {
-        user: this.configService.get<string>('SMTP_USER'),
-        pass: this.configService.get<string>('SMTP_PASS'),
-      },
-    };
-    this.transporter = nodemailer.createTransport(options);
+    const apiKey = this.configService.get<string>('SENDGRID_API_KEY');
+    if (apiKey) {
+      sgMail.setApiKey(apiKey);
+    }
   }
 
   async sendPasswordResetEmail(
@@ -31,9 +18,10 @@ export class MailService {
     resetLink: string,
   ): Promise<void> {
     const from =
-      this.configService.get<string>('SMTP_FROM') ?? 'no-reply@nannymatch.com';
+      this.configService.get<string>('SENDGRID_FROM') ??
+      'no-reply@nannymatch.com';
 
-    await this.transporter.sendMail({
+    await sgMail.send({
       from,
       to: email,
       subject: 'Reset your password — NannyMatch',
