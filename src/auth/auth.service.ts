@@ -240,13 +240,15 @@ export class AuthService {
 
     // Sign a short-lived token using a secret derived from the user's current password hash
     // — the token becomes invalid automatically once the password is changed.
-    const secret = this.configService.get<string>('JWT_SECRET')! + user.password;
+    const secret =
+      this.configService.get<string>('JWT_SECRET')! + user.password;
     const token = this.jwtService.sign(
       { sub: user.id, email: user.email },
       { secret, expiresIn: '15m' },
     );
 
-    const appUrl = this.configService.get<string>('APP_URL') ?? 'http://localhost:3000';
+    const appUrl =
+      this.configService.get<string>('APP_URL') ?? 'http://localhost:3000';
     const resetLink = `${appUrl}/reset-password?token=${token}`;
 
     await this.mailService.sendPasswordResetEmail(email, resetLink);
@@ -254,11 +256,14 @@ export class AuthService {
     return { message: 'If that email exists, a reset link has been sent.' };
   }
 
-  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+  async resetPassword(
+    token: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
     // Decode without verifying first to get the user id
     let payload: { sub: number; email: string };
     try {
-      payload = this.jwtService.decode(token) as { sub: number; email: string };
+      payload = this.jwtService.decode(token);
     } catch {
       throw new BadRequestException('Invalid token');
     }
@@ -267,13 +272,16 @@ export class AuthService {
       throw new BadRequestException('Invalid token');
     }
 
-    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     // Verify the token using the secret derived from the current password hash
-    const secret = this.configService.get<string>('JWT_SECRET')! + user.password;
+    const secret =
+      this.configService.get<string>('JWT_SECRET')! + user.password;
     try {
       this.jwtService.verify(token, { secret });
     } catch {

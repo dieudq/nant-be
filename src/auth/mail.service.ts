@@ -19,8 +19,12 @@ export class MailService {
     });
   }
 
-  async sendPasswordResetEmail(email: string, resetLink: string): Promise<void> {
-    const from = this.configService.get<string>('SMTP_FROM') ?? 'no-reply@nannymatch.com';
+  async sendPasswordResetEmail(
+    email: string,
+    resetLink: string,
+  ): Promise<void> {
+    const from =
+      this.configService.get<string>('SMTP_FROM') ?? 'no-reply@nannymatch.com';
 
     await this.transporter.sendMail({
       from,
