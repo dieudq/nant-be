@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as sgMail from '@sendgrid/mail';
+import sgMail from '@sendgrid/mail';
 
 @Injectable()
 export class MailService {
@@ -10,6 +10,14 @@ export class MailService {
     const apiKey = this.configService.get<string>('SENDGRID_API_KEY');
     if (apiKey) {
       sgMail.setApiKey(apiKey);
+    } else {
+      this.logger.warn('SENDGRID_API_KEY is not set — emails will not be sent');
+    }
+
+    if (!this.configService.get<string>('SENDGRID_FROM')) {
+      this.logger.warn(
+        'SENDGRID_FROM is not set — using fallback address which may not be a verified SendGrid Sender Identity',
+      );
     }
   }
 
