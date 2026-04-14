@@ -8,10 +8,13 @@ export class MailService {
   private transporter: nodemailer.Transporter;
 
   constructor(private configService: ConfigService) {
-    this.transporter = nodemailer.createTransport({
+    // Cast to any because @types/nodemailer omits the `family` socket option.
+    // family: 4 forces IPv4 to avoid ENETUNREACH on servers without IPv6.
+    const options: any = {
       host: this.configService.get<string>('SMTP_HOST'),
       port: this.configService.get<number>('SMTP_PORT') ?? 587,
       secure: this.configService.get<string>('SMTP_SECURE') === 'true',
+      family: 4,
       connectionTimeout: 5000,
       greetingTimeout: 5000,
       socketTimeout: 10000,
@@ -19,7 +22,8 @@ export class MailService {
         user: this.configService.get<string>('SMTP_USER'),
         pass: this.configService.get<string>('SMTP_PASS'),
       },
-    });
+    };
+    this.transporter = nodemailer.createTransport(options);
   }
 
   async sendPasswordResetEmail(
